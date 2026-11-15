@@ -76,6 +76,10 @@ input[type=text],input[type=date]{display:block;width:100%;margin-top:4px;font:i
     <label class="f">Data
       <input type="date" id="date">
     </label>
+    <label class="f" id="payRow">Tipo di pagamento
+      <input type="text" id="pay" list="payList" autocomplete="off" placeholder="es. Carta">
+      <datalist id="payList"><option value="Carta"><option value="Contanti"><option value="Bonifico"><option value="PayPal"></datalist>
+    </label>
     <div id="photoRow">
       <div class="ph">
         <button class="s" id="bPhoto" type="button">Aggiungi foto</button>
@@ -139,7 +143,7 @@ function render() {
     const k = document.createElement('div'); k.className = 'k' + (e.type === 'pack' ? ' in' : '');
     k.textContent = (e.type === 'pack' ? '+' : '−') + nf(e.kwh) + ' kWh';
     const d = document.createElement('div'); d.className = 'd';
-    d.textContent = (e.type === 'pack' ? 'Pacchetto · ' : '') + fdate(e.date);
+    d.textContent = (e.type === 'pack' ? 'Pacchetto · ' + (e.payment ? e.payment + ' · ' : '') : '') + fdate(e.date);
     m.append(k, d); r.append(t, m);
     r.onclick = () => openDetail(e);
     list.appendChild(r);
@@ -151,6 +155,7 @@ function openSheet(m) {
   $('#sTitle').textContent = m === 'charge' ? 'Nuova ricarica' : 'Nuovo pacchetto di kWh';
   $('#kwh').value = ''; $('#date').value = today(); $('#err').textContent = '';
   $('#photoRow').hidden = m !== 'charge'; $('#prev').hidden = true; $('#photo').value = '';
+  $('#payRow').hidden = m === 'charge'; $('#pay').value = '';
   $('#bPhoto').textContent = 'Aggiungi foto';
   $('#bSave').disabled = false; $('#bSave').textContent = 'Salva';
   $('#sheet').hidden = false;
@@ -184,6 +189,7 @@ async function save() {
   const btn = $('#bSave'); btn.disabled = true; btn.textContent = 'Salvo…'; err.textContent = '';
   const doc = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), type: mode, kwh: Math.round(kwh * 100) / 100, date: $('#date').value || today(), ts: Date.now()};
   let full = null;
+  if (mode === 'pack') { const p = $('#pay').value.trim(); if (p) doc.payment = p.slice(0, 40); }
   try {
     if (mode === 'charge' && file) {
       const p = await prep(file);
@@ -201,7 +207,7 @@ async function save() {
 function openDetail(e) {
   cur = e; armed = false;
   $('#dTitle').textContent = (e.type === 'pack' ? '+' : '−') + nf(e.kwh) + ' kWh';
-  $('#dDate').textContent = (e.type === 'pack' ? 'Pacchetto acquistato il ' : 'Ricarica del ') + fdate(e.date);
+  $('#dDate').textContent = (e.type === 'pack' ? 'Pacchetto acquistato il ' : 'Ricarica del ') + fdate(e.date) + (e.type === 'pack' && e.payment ? ' · Pagamento: ' + e.payment : '');
   const img = $('#dImg');
   img.removeAttribute('src'); img.hidden = true;
   if (curUrl) { URL.revokeObjectURL(curUrl); curUrl = null; }
